@@ -51,7 +51,7 @@ func exportNextPage(ctx context.Context, lc *http.Client, startCursor string, gc
 
 	pageSize, err := strconv.Atoi(os.Getenv("BYELINEAR_PAGE_SIZE"))
 	if err != nil {
-		pageSize = 1
+		pageSize = 10
 	}
 	page, before, err := queryLinearIssuesPage(ctx, lc, pageSize, startCursor)
 	if err != nil {
@@ -62,7 +62,6 @@ func exportNextPage(ctx context.Context, lc *http.Client, startCursor string, gc
 		liss := page[i]
 		iss := fromLinearIssue(liss)
 
-		log.SetPrefix(liss.Identifier + ": ")
 		url, err := exportToGithub(ctx, gc, liss.Identifier, iss)
 		if err != nil {
 			return "", err
