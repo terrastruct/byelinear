@@ -1,4 +1,4 @@
-module github.com/terrastruct/src/misc/2022/09/byelinear
+module oss.terrastruct.com/byelinear
 
 go 1.18
 
