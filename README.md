@@ -1,10 +1,16 @@
 # byelinear
 
-byelinear exports Linear issues including assignees, comments, labels, linked issues/PRs and projects to GitHub issues.
+`byelinear` exports Linear issues including assignees, comments, labels, linked issues/PRs and projects to GitHub issues.
 
-We wrote this for our migration back from Linear issues to GitHub issues.
+While we enjoyed Linear's slick UI and superior featureset, we ultimately decided that we
+wanted our issues on the same platform with the rest of our development. GitHub issues
+aren't perfect but they work well enough for us and are more tightly integrated with
+GitHub. So we wrote this for our internal migration from Linear issues to GitHub issues.
 
-![cpu usage](./cpu.png)
+It will loop through Linear issues in reverse so that the most recent issue is created
+last and thus shows up first in GitHub issues.
+
+It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
 It will hit the Linear GraphQL complexity limit quite quickly. In our case just 100
 issues. byelinear will back off and retry every minute so you can just let it run and
@@ -14,13 +20,7 @@ Or you can terminate byelinear and then later set `$BYELINEAR_BEFORE` to the ID 
 last successfully exported issue to resume right where you left off. You can find the
 ID in the logs.
 
-You can also contact Linear's support and request they raise your rate limit
-temporarily.
-
-It will loop through Linear issues in reverse so that the most recent issue is created
-last and thus shows up first in GitHub issues.
-
-It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
+You can also contact Linear's support and request they raise your rate limit temporarily.
 
 ## Install
 
@@ -96,3 +96,7 @@ error occurs on the next issue's export.
 ### After
 
 ![github](./TER-1396-github.png)
+
+## Related
+
+- [https://github.com/jccr/linear-to-gitlab](https://github.com/jccr/linear-to-gitlab)
