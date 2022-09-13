@@ -4,8 +4,17 @@ byelinear exports Linear issues including assignees, comments, labels, linked is
 
 We wrote this for our migration back from Linear issues to GitHub issues.
 
+![cpu usage](./cpu.png)
+
 It will hit the Linear GraphQL complexity limit quite quickly. In our case just 100
-issues. So it's best to contact Linear's support and request they raise your rate limit
+issues. byelinear will back off and retry every minute so you can just let it run and
+wait until it's done.
+
+Or you can terminate byelinear and then later set `$BYELINEAR_BEFORE` to the ID of the
+last successfully exported issue to resume right where you left off. You can find the
+ID in the logs.
+
+You can also contact Linear's support support and request they raise your rate limit
 temporarily.
 
 It will loop through Linear issues in reverse so that the most recent issue is created
@@ -13,11 +22,11 @@ last and thus shows up first in GitHub issues.
 
 It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
-## Why?
-
-![cpu usage](./cpu.png)
-
 ## Example
+
+```sh
+go install oss.terrastruct.com/byelinear@latest
+```
 
 ```sh
 # Use to resume export with ID of last successfully exported issue. See logs for ID.
@@ -33,7 +42,7 @@ export BYELINEAR_REPO=...
 export GITHUB_TOKEN=...
 export LINEAR_API_KEY=...
 
-go run .
+byelinear
 ```
 
 ### Before
