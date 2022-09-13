@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -17,10 +19,8 @@ func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, res
 }
 
 func queryLinearIssuesPage(ctx context.Context, hc *http.Client, pageSize int, before string) ([]*linearIssue, string, error) {
-	// To test a specific linear:
-	//   issues(last: $last, before: $before, filter: {number: {eq: 1396}}) {
-	queryString := `query($last: Int, $before: String) {
-		issues(last: $last, before: $before) {
+	queryString := `query($last: Int, $before: String, $number: Float) {
+		issues(last: $last, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
 			nodes {
 				id
 				url
@@ -100,7 +100,13 @@ func queryLinearIssuesPage(ctx context.Context, hc *http.Client, pageSize int, b
 	if before != "" {
 		qreq.Variables["before"] = before
 	}
-	err := doLinearQuery(ctx, hc, qreq, &queryResp)
+	// To test a specific linear issue do:
+	// e.g. BYELINEAR_ISSUE_NUMBER=1396
+	number, err := strconv.Atoi(os.Getenv("BYELINEAR_ISSUE_NUMBER"))
+	if err == nil {
+		qreq.Variables["number"] = number
+	}
+	err = doLinearQuery(ctx, hc, qreq, &queryResp)
 	if err != nil {
 		return nil, "", err
 	}
