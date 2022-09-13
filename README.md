@@ -14,7 +14,7 @@ Or you can terminate byelinear and then later set `$BYELINEAR_BEFORE` to the ID 
 last successfully exported issue to resume right where you left off. You can find the
 ID in the logs.
 
-You can also contact Linear's support support and request they raise your rate limit
+You can also contact Linear's support and request they raise your rate limit
 temporarily.
 
 It will loop through Linear issues in reverse so that the most recent issue is created
@@ -37,8 +37,11 @@ and the expected output.
 ```sh
 # Use to resume export with ID of last successfully exported issue. See logs for ID.
 # It's BEFORE because we paginate in reverse as we want most recent issues created last.
-# Optional.
+# Optional. Default is to start at the very first created issue.
 export BYELINEAR_BEFORE=
+
+# Use to export only a single issue by the linear issue number. Useful for testing.
+export BYELINEAR_ISSUE_NUMBER=
 
 # Size of pages to fetch from linear.
 # Optional, default is 10.
@@ -70,11 +73,21 @@ manually go into the projects settings and enable the workflows there.
 
 ```
 $ byelinear
-2022/09/13 11:54:10 TER-12: ensuring label: Improvement
-2022/09/13 11:54:10 TER-12: creating
-2022/09/13 11:54:11 TER-12: url: https://github.com/terrastruct/byelinear-test/issues/4
-2022/09/13 11:54:11 TER-12: id: 6d22a171-3299-4e31-9f74-6d61d476538e
+2022/09/13 12:41:49 TER-1396: ensuring label: dsl
+2022/09/13 12:41:49 TER-1396: ensuring label: blocked
+2022/09/13 12:41:49 TER-1396: ensuring label: easy
+2022/09/13 12:41:50 TER-1396: ensuring label: backend
+2022/09/13 12:41:50 TER-1396: creating
+2022/09/13 12:41:52 TER-1396: creating comment 0
+2022/09/13 12:41:53 TER-1396: creating comment 1
+2022/09/13 12:41:54 TER-1396: ensuring project: D2
+2022/09/13 12:41:55 TER-1396: url: https://github.com/terrastruct/byelinear-test/issues/26
+2022/09/13 12:41:55 TER-1396: id: 40e8bded-007c-4151-ab62-74ee65485b45
+...
 ```
+
+That ID printed at the end is what you can set in `$BYELINEAR_BEFORE` to resume if an
+error occurs on the next issue's export.
 
 ### Before
 
