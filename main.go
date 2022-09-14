@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v47/github"
@@ -181,7 +182,7 @@ func (s *state) fromLinear(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(time.Minute):
+			case <-time.After(time.Minute * 5):
 				continue
 			}
 		}
@@ -200,7 +201,7 @@ func (s *state) fromLinear(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Second * 2):
+		case <-time.After(time.Second):
 			continue
 		}
 	}
@@ -221,7 +222,11 @@ func (s *state) toGithub(ctx context.Context) error {
 		))
 	}
 	gc := github.NewClient(gchttp)
+
 	for _, iss := range s.Issues {
+		if byelinearIssueNumber != "" && !strings.HasSuffix(iss.Identifier, "-"+byelinearIssueNumber) {
+			continue
+		}
 		liss, err := iss.linear()
 		if err != nil {
 			return err
@@ -244,7 +249,7 @@ func (s *state) toGithub(ctx context.Context) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
-				case <-time.After(time.Minute):
+				case <-time.After(time.Minute * 5):
 					continue
 				}
 			}
@@ -257,7 +262,7 @@ func (s *state) toGithub(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Second * 2):
+		case <-time.After(time.Second):
 			continue
 		}
 	}

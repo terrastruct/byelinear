@@ -13,11 +13,14 @@ last and thus shows up first in GitHub issues.
 It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
 It will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
-case just 20 issues. byelinear will back off and retry every minute so you can just let
+case just 20 issues. byelinear will back off and retry every 5 minutes so you can just let
 it run and wait until it's done. The fetch rate ends up being about 20 issues an hour.
 
-You can also terminate byelinear and resume later. It will start right where it left off
-based on the state in `./linear-corpus/state.json` (you can change this via
+There is also a one second wait in between every issue when fetching from Linear and
+exporting to GitHub.
+
+You can terminate byelinear and resume later. It will start right where it left off based
+on the state in `./linear-corpus/state.json` (you can change this via
 `$BYELINEAR_CORPUS`).
 
 You can also contact Linear's support and request they raise your rate limit temporarily.
@@ -39,7 +42,7 @@ for how to run and what the logs look like.
 # Defaults to linear-corpus in the current directory.
 export BYELINEAR_CORPUS=
 
-# Use to export only a single issue by the linear issue number. Useful for testing.
+# Use to fetch and export only a single issue by the linear issue number. Useful for testing.
 export BYELINEAR_ISSUE_NUMBER=
 
 # org/repo into which to import issues.
@@ -70,25 +73,24 @@ The following example fetches issue TER-1396 from linear and then exports it to 
 Empty `$BYELINEAR_ISSUE_NUMBER` to fetch all issues.
 
 ```
-$ LINEAR_API_KEY=lin_api_... BYELINEAR_ISSUE_NUMBER=1396 byelinear from-linear
-2022/09/13 17:42:54 TER-1396: fetched
-2022/09/13 17:42:56 All linear issues fetched successfully.
-2022/09/13 17:42:56 Use subcommand to-github now to export them to GitHub.
+$ BYELINEAR_ISSUE_NUMBER=1396 LINEAR_API_KEY=lin_api_... go run . from-linear
+2022/09/14 10:43:33 TER-1396: fetched
+2022/09/14 10:43:34 All linear issues fetched successfully.
+2022/09/14 10:43:34 Use subcommand to-github now to export them to GitHub.
 ```
 
 ```
-# to-github knows what you fetched and needs exporting based on the corpus in ./linear-corpus
-$ GITHUB_TOKEN=ghp_... BYELINEAR_ORG=terrastruct BYELINEAR_REPO=byelinear-test byelinear to-github
-2022/09/13 17:43:35 TER-1396: exporting
-2022/09/13 17:43:35 TER-1396: ensuring label: dsl
-2022/09/13 17:43:35 TER-1396: ensuring label: blocked
-2022/09/13 17:43:35 TER-1396: ensuring label: easy
-2022/09/13 17:43:36 TER-1396: ensuring label: backend
-2022/09/13 17:43:36 TER-1396: creating
-2022/09/13 17:43:37 TER-1396: creating comment 0
-2022/09/13 17:43:38 TER-1396: creating comment 1
-2022/09/13 17:43:38 TER-1396: ensuring project: D2
-2022/09/13 17:43:40 TER-1396: exported: https://github.com/terrastruct/byelinear-test/issues/40
+$ BYELINEAR_ISSUE_NUMBER=1396 GITHUB_TOKEN=ghp_... BYELINEAR_ORG=terrastruct BYELINEAR_REPO=byelinear-test go run . to-github
+2022/09/14 10:44:01 TER-1396: exporting
+2022/09/14 10:44:01 TER-1396: ensuring label: dsl
+2022/09/14 10:44:01 TER-1396: ensuring label: blocked
+2022/09/14 10:44:02 TER-1396: ensuring label: easy
+2022/09/14 10:44:02 TER-1396: ensuring label: backend
+2022/09/14 10:44:02 TER-1396: creating
+2022/09/14 10:44:04 TER-1396: creating comment 0
+2022/09/14 10:44:04 TER-1396: creating comment 1
+2022/09/14 10:44:05 TER-1396: ensuring project: D2
+2022/09/14 10:44:07 TER-1396: exported: https://github.com/terrastruct/byelinear-test/issues/1
 ```
 
 ### Before
