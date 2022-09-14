@@ -13,10 +13,10 @@ last and thus shows up first in GitHub issues.
 It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
 It will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
-case just 100 issues. byelinear will back off and retry every minute so you can just let
-it run and wait until it's done.
+case just 20 issues. byelinear will back off and retry every minute so you can just let
+it run and wait until it's done. The fetch rate ends up being about 20 issues an hour.
 
-Or you can terminate byelinear and resume later. It will start right where it left off
+You can also terminate byelinear and resume later. It will start right where it left off
 based on the state in `./linear-corpus/state.json` (you can change this via
 `$BYELINEAR_CORPUS`).
 
