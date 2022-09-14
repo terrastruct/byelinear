@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -18,9 +17,9 @@ func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, res
 	return json.Unmarshal(b, &resp)
 }
 
-func queryLinearIssuesPage(ctx context.Context, hc *http.Client, pageSize int, before string) ([]*linearIssue, string, error) {
-	queryString := `query($last: Int, $before: String, $number: Float) {
-		issues(last: $last, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
+func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*linearIssue, error) {
+	queryString := `query($before: String, $number: Float) {
+		issues(last: 1, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
 			nodes {
 				id
 				url
@@ -95,37 +94,30 @@ func queryLinearIssuesPage(ctx context.Context, hc *http.Client, pageSize int, b
 
 	qreq := &graphqlQuery{
 		Query:     queryString,
-		Variables: map[string]interface{}{"last": pageSize},
+		Variables: map[string]interface{}{},
 	}
 	if before != "" {
 		qreq.Variables["before"] = before
 	}
-	// To test a specific linear issue do:
-	// e.g. BYELINEAR_ISSUE_NUMBER=1396
-	number, err := strconv.Atoi(os.Getenv("BYELINEAR_ISSUE_NUMBER"))
+	number, err := strconv.Atoi(byelinearIssueNumber)
 	if err == nil {
 		qreq.Variables["number"] = number
 	}
 	err = doLinearQuery(ctx, hc, qreq, &queryResp)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	before = queryResp.Data.Issues.PageInfo.StartCursor
-	// hasNextPage only reports forward, not back. So we instead just check if the query
-	// found anything.
 	if len(queryResp.Data.Issues.Nodes) == 0 {
-		before = ""
+		return nil, nil
 	}
 
-	for _, li := range queryResp.Data.Issues.Nodes {
-		err = queryLinearRelations(ctx, hc, li)
-		if err != nil {
-			return nil, "", err
-		}
+	li := queryResp.Data.Issues.Nodes[0]
+	err = queryLinearRelations(ctx, hc, li)
+	if err != nil {
+		return nil, err
 	}
-
-	return queryResp.Data.Issues.Nodes, before, nil
+	return li, nil
 }
 
 func queryLinearRelations(ctx context.Context, hc *http.Client, li *linearIssue) error {

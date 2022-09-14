@@ -14,6 +14,9 @@ import (
 )
 
 func exportToGithub(ctx context.Context, gc *github.Client, ident string, iss *githubIssue) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
+	defer cancel()
+
 	issReq := &github.IssueRequest{
 		Title:    &iss.title,
 		Assignee: &iss.assignee,
