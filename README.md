@@ -7,29 +7,33 @@ wanted our issues on the same platform with the rest of our development. GitHub 
 aren't perfect but they work well enough for us and are more tightly integrated with
 GitHub. So we wrote this for our internal migration from Linear issues to GitHub issues.
 
-It will loop through Linear issues in reverse so that the most recent issue is created
-last and thus shows up first in GitHub issues.
+byelinear uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
-It uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
+<!-- toc -->
 
-It will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
-case just 20 issues. byelinear will back off and retry every 5 minutes so you can just let
-it run and wait until it's done. The fetch rate ends up being about 20 issues an hour.
+- [Install](#install)
+- [Configuration](#configuration)
+- [Caveats](#caveats)
+  * [Issues order](#issues-order)
+  * [Rate limits](#rate-limits)
+  * [Projects](#projects)
+- [Example](#example)
+  * [Before](#before)
+  * [After](#after)
+- [Related](#related)
 
-There is also a one second wait in between every issue when fetching from Linear and
-exporting to GitHub.
-
-You can terminate byelinear and resume later. It will start right where it left off based
-on the state in `./linear-corpus/state.json` (you can change this via
-`$BYELINEAR_CORPUS`).
-
-You can also contact Linear's support and request they raise your rate limit temporarily.
+<!-- tocstop -->
 
 ## Install
 
 ```sh
-go install oss.terrastruct.com/byelinear@latest
-byelinear --help
+$ go install oss.terrastruct.com/byelinear@latest
+$ byelinear --help
+usage:
+        byelinear [ from-linear | to-github ]
+
+Use from-linear to export issues from linear and to-github to export issues to github.
+See docs and environment variable configuration at https://oss.terrastruct.com/byelinear
 ```
 
 See configuration to setup the required environment variables. Then see the example below
@@ -57,7 +61,29 @@ export LINEAR_API_KEY=
 
 ## Caveats
 
-It gets everything right except for projects and state as there are limitations in
+### Issues order
+
+byelinear fetches Linear issues in reverse so that the most recent issue is created last
+and thus shows up first in GitHub issues.
+
+### Rate limits
+
+byelinear will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
+case just 20 issues. byelinear will back off and retry every 5 minutes so you can just let
+it run and wait until it's done. The fetch rate ends up being about 20 issues an hour.
+
+There is also a one second wait in between every issue when fetching from Linear and
+exporting to GitHub.
+
+You can terminate byelinear and resume later. It will start right where it left off based
+on the state in `./linear-corpus/state.json` (you can change this via
+`$BYELINEAR_CORPUS`).
+
+You can also contact Linear's support and request they raise your rate limit temporarily.
+
+### Projects
+
+byelinear gets everything right except for projects and state as there are limitations in
 GitHub's project API. There is no way to add a new project state/column programatically so
 it tries to map incoming states to GitHub default states as best as possible.
 
