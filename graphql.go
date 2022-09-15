@@ -14,28 +14,28 @@ type graphqlQuery struct {
 	Variables map[string]interface{} `json:"variables"`
 }
 
-func doGraphQLQuery(ctx context.Context, url string, hc *http.Client, qreq *graphqlQuery) ([]byte, error) {
+func doGraphQLQuery(ctx context.Context, url string, hc *http.Client, qreq *graphqlQuery) ([]byte, *http.Response, error) {
 	bodyJSON, err := json.Marshal(qreq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	body := bytes.NewReader(bodyJSON)
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := hc.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer httpResp.Body.Close()
 
 	b, err := io.ReadAll(httpResp.Body)
 	if httpResp.StatusCode != 200 {
-		return nil, fmt.Errorf("%s: got body %q", httpResp.Status, b)
+		return nil, httpResp, fmt.Errorf("%s: got body %q", httpResp.Status, b)
 	}
-	return b, err
+	return b, httpResp, err
 }

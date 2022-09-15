@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
-	b, err := doGraphQLQuery(ctx, "https://api.linear.app/graphql", hc, qreq)
+	b, httpResp, err := doGraphQLQuery(ctx, "https://api.linear.app/graphql", hc, qreq)
+	if httpResp != nil && httpResp.Header.Get("X-Complexity") != "" {
+		log.Printf("linear query with %s complexity", httpResp.Header.Get("X-Complexity"))
+	}
 	if err != nil {
 		return err
 	}
@@ -43,14 +47,14 @@ func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*lin
 					description
 				}
 				createdAt
-				labels {
+				labels(last: 10) {
 					nodes {
 						name
 						color
 						description
 					}
 				}
-				comments {
+				comments(last: 10) {
 					nodes {
 						url
 						user {
@@ -61,7 +65,7 @@ func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*lin
 						body
 					}
 				}
-				integrationResources {
+				integrationResources(last: 10) {
 					nodes {
 						pullRequest {
 							number
@@ -70,7 +74,7 @@ func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*lin
 						}
 					}
 				}
-				attachments {
+				attachments(last: 10) {
 					nodes {
 						url
 					}
@@ -124,7 +128,7 @@ func queryLinearRelations(ctx context.Context, hc *http.Client, li *linearIssue)
 	queryString := `query($id: ID){
 		issues(filter: {id: {eq: $id}}) {
 			nodes {
-				relations {
+				relations(last: 10) {
 					nodes {
 						relatedIssue {
 							identifier
@@ -134,7 +138,7 @@ func queryLinearRelations(ctx context.Context, hc *http.Client, li *linearIssue)
 				parent {
 					identifier
 				}
-				children {
+				children(last: 10) {
 					nodes {
 						identifier
 					}

@@ -69,8 +69,8 @@ and thus shows up first in GitHub issues.
 ### Rate limits
 
 byelinear will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
-case just 20 issues. byelinear will back off and retry every 5 minutes so you can just let
-it run and wait until it's done. The fetch rate ends up being about 20 issues an hour.
+case about 140 issues. byelinear will back off and retry every 5 minutes so you can just let
+it run and wait until it's done. The fetch rate ends up being about 140 issues an hour.
 
 There is also a one second wait in between every issue when fetching from Linear and
 exporting to GitHub.

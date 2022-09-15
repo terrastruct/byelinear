@@ -206,7 +206,7 @@ func queryOrganization(ctx context.Context, hc *http.Client) (*organization, err
 	queryString := `query($login: String!) {
 		organization(login: $login) {
 			id
-			projectsV2(first: 50) {
+			projectsV2(first: 25) {
 				nodes {
 					id
 					title
@@ -440,7 +440,7 @@ func isAlreadyExistsErr(err error) bool {
 }
 
 func doGithubQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
-	b, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
+	b, _, err := doGraphQLQuery(ctx, "https://api.github.com/graphql", hc, qreq)
 	if err != nil {
 		return err
 	}
