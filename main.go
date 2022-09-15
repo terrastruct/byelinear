@@ -26,13 +26,21 @@ var githubToken = os.Getenv("GITHUB_TOKEN")
 var linearAPIKey = os.Getenv("LINEAR_API_KEY")
 
 type state struct {
-	Issues []*issueState `json:"issues"`
+	Issues   []*issueState   `json:"issues"`
+	Labels   []string        `json:"labels"`
+	Projects []*projectState `json:"projects"`
 }
 
 type issueState struct {
 	ID               string `json:"id"`
 	Identifier       string `json:"identifier"`
 	ExportedToGithub bool   `json:"exported_to_github"`
+}
+
+type projectState struct {
+	Name            string           `json:"name"`
+	ID              string           `json:"keyName"`
+	StatusFieldInfo *statusFieldInfo `json:"status_field_info"`
 }
 
 func main() {
@@ -255,7 +263,7 @@ func (s *state) toGithub(ctx context.Context) error {
 		log.Printf("%s: exporting", iss.Identifier)
 
 		for {
-			url, err := exportToGithub(ctx, gc, iss.Identifier, fromLinearIssue(liss))
+			url, err := s.exportToGithub(ctx, gc, iss.Identifier, fromLinearIssue(liss))
 			if err != nil {
 				log.Printf("%s: failed to export (retrying in 5 minutes): %v", iss.Identifier, err)
 				select {

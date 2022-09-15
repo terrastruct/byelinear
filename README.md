@@ -68,6 +68,8 @@ and thus shows up first in GitHub issues.
 
 ### Resumption
 
+#### from-linear
+
 If you have thousands of issues and hit a rate limit or something goes wrong, know that
 `byelinear from-linear` stores all fetched issues on the disk in
 `./linear-corpus/<issue-identifier>.json`. You can ctrl+c and resume later and `byelinear
@@ -75,6 +77,22 @@ from-linear` will know to start from the last fetched issue based on
 `./linear-corpus/state.json`.
 
 You can change the corpus directory with `$BYELINEAR_CORPUS`.
+
+#### to-github
+
+If something goes wrong when exporting to github and you ctrl+c, you can resume but you
+might end up with an incomplete but also duplicate issue. To avoid this, first check your
+repo to see the last created issue and ensure the state in the comment/linear matches the
+github state. Mainly labels, projects and comments. Make any changes you need to to make
+it match. Then go into `./linear-corpus/state.json` and ensure `"exported_to_json":true`.
+
+Now you can restart.
+
+In the future to-github could be improved to allow seamless resumption by storing state
+about each successfully completed operation in the state.json instead of just the issue
+as a whole.
+
+For now, it's best that once you start, you let it export every issue to GitHub.
 
 ### Projects
 

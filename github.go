@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v47/github"
 )
 
-func exportToGithub(ctx context.Context, gc *github.Client, ident string, iss *githubIssue) (string, error) {
+func (s *state) exportToGithub(ctx context.Context, gc *github.Client, ident string, iss *githubIssue) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
 	defer cancel()
 
@@ -29,10 +29,13 @@ func exportToGithub(ctx context.Context, gc *github.Client, ident string, iss *g
 		*issReq.Labels = append(*issReq.Labels, l.name)
 
 		log.Printf("%s: ensuring label: %s", ident, l.name)
-		color := strings.TrimPrefix(l.color, "#")
-		err := ensureLabel(ctx, gc, l.name, color, l.desc)
-		if err != nil {
-			return "", err
+		if !s.hasLabel(l.name) {
+			color := strings.TrimPrefix(l.color, "#")
+			err := ensureLabel(ctx, gc, l.name, color, l.desc)
+			if err != nil {
+				return "", err
+			}
+			s.Labels = append(s.Labels, l.name)
 		}
 	}
 	log.Printf("%s: creating", ident)
@@ -62,19 +65,28 @@ func exportToGithub(ctx context.Context, gc *github.Client, ident string, iss *g
 	}
 	if iss.project != nil {
 		log.Printf("%s: ensuring project: %s", ident, iss.project.name)
-		pID, pnum, err := ensureProject(ctx, gc.Client(), iss.project.name, iss.project.desc)
+		p, ok := s.hasProject(iss.project.name)
+		if !ok {
+			pID, pnum, err := ensureProject(ctx, gc.Client(), iss.project.name, iss.project.desc)
+			if err != nil {
+				return "", err
+			}
+			si, err := queryStatusField(ctx, gc.Client(), pnum)
+			if err != nil {
+				return "", err
+			}
+			p = &projectState{
+				Name:            iss.project.name,
+				ID:              pID,
+				StatusFieldInfo: si,
+			}
+			s.Projects = append(s.Projects, p)
+		}
+		itemID, err := addIssueToProject(ctx, gc.Client(), p.ID, *giss.NodeID)
 		if err != nil {
 			return "", err
 		}
-		si, err := queryStatusField(ctx, gc.Client(), pnum)
-		if err != nil {
-			return "", err
-		}
-		itemID, err := addIssueToProject(ctx, gc.Client(), pID, *giss.NodeID)
-		if err != nil {
-			return "", err
-		}
-		err = setProjectIssueStatus(ctx, gc.Client(), pID, itemID, si, iss.state)
+		err = setProjectIssueStatus(ctx, gc.Client(), p.ID, itemID, p.StatusFieldInfo, iss.state)
 		if err != nil {
 			return "", err
 		}
@@ -256,11 +268,11 @@ func queryOrganization(ctx context.Context, hc *http.Client) (*organization, err
 }
 
 type statusFieldInfo struct {
-	id string
+	ID string `json:"ID"`
 
-	todoID       string
-	inProgressID string
-	doneID       string
+	todoID       string `json:"todo_id"`
+	inProgressID string `json:"in_progress_id"`
+	doneID       string `json:"done_id"`
 }
 
 func queryStatusField(ctx context.Context, hc *http.Client, pnum int) (*statusFieldInfo, error) {
@@ -305,7 +317,7 @@ func queryStatusField(ctx context.Context, hc *http.Client, pnum int) (*statusFi
 		return nil, err
 	}
 	si := &statusFieldInfo{
-		id: queryResp.Data.Organization.ProjectV2.Field.ID,
+		ID: queryResp.Data.Organization.ProjectV2.Field.ID,
 	}
 	for _, o := range queryResp.Data.Organization.ProjectV2.Field.Options {
 		switch o.Name {
@@ -341,7 +353,7 @@ func setProjectIssueStatus(ctx context.Context, hc *http.Client, projectID, issI
 	}`
 	qreq := &graphqlQuery{
 		Query:     queryString,
-		Variables: map[string]interface{}{"projectId": projectID, "itemId": issID, "fieldId": si.id, "optionId": optionID},
+		Variables: map[string]interface{}{"projectId": projectID, "itemId": issID, "fieldId": si.ID, "optionId": optionID},
 	}
 	return doGithubQuery(ctx, hc, qreq, nil)
 }
@@ -505,4 +517,22 @@ func formatArr(v interface{}) string {
 		return s[1 : len(s)-1]
 	}
 	return s
+}
+
+func (s *state) hasLabel(name string) bool {
+	for _, l := range s.Labels {
+		if l == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *state) hasProject(name string) (*projectState, bool) {
+	for _, p := range s.Projects {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return nil, false
 }
