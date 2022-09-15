@@ -171,12 +171,20 @@ func (s *state) fromLinear(ctx context.Context) error {
 		))
 	}
 
-	previousID := ""
+	iss := &issueState{
+		ID: "",
+		Identifier: "",
+	}
 	if len(s.Issues) > 0 {
-		previousID = s.Issues[len(s.Issues)-1].ID
+		iss = s.Issues[len(s.Issues)-1]
 	}
 	for {
-		liss, err := fetchLinearIssue(ctx, lc, previousID)
+		if iss.Identifier != "" {
+			log.Printf("%s: fetching next", iss.Identifier)
+		} else {
+			log.Printf("fetching first issue")
+		}
+		liss, err := fetchLinearIssue(ctx, lc, iss.ID)
 		if err != nil {
 			log.Print(err)
 			select {
@@ -192,12 +200,18 @@ func (s *state) fromLinear(ctx context.Context) error {
 			log.Print("Use subcommand to-github now to export them to GitHub.")
 			return nil
 		}
-		s.Issues = append(s.Issues, &issueState{
+		iss = &issueState{
 			ID:               liss.ID,
 			Identifier:       liss.Identifier,
 			ExportedToGithub: false,
-		})
-		previousID = liss.ID
+		}
+		s.Issues = append(s.Issues, iss)
+
+		err = writeState(s)
+		if err != nil {
+			return err
+		}
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -256,6 +270,11 @@ func (s *state) toGithub(ctx context.Context) error {
 
 			iss.ExportedToGithub = true
 			log.Printf("%s: exported: %s", iss.Identifier, url)
+
+			err = writeState(s)
+			if err != nil {
+				return err
+			}
 			break
 		}
 
