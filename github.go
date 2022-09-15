@@ -270,9 +270,9 @@ func queryOrganization(ctx context.Context, hc *http.Client) (*organization, err
 type statusFieldInfo struct {
 	ID string `json:"ID"`
 
-	todoID       string `json:"todo_id"`
-	inProgressID string `json:"in_progress_id"`
-	doneID       string `json:"done_id"`
+	TodoID       string `json:"todo_id"`
+	InProgressID string `json:"in_progress_id"`
+	DoneID       string `json:"done_id"`
 }
 
 func queryStatusField(ctx context.Context, hc *http.Client, pnum int) (*statusFieldInfo, error) {
@@ -322,11 +322,11 @@ func queryStatusField(ctx context.Context, hc *http.Client, pnum int) (*statusFi
 	for _, o := range queryResp.Data.Organization.ProjectV2.Field.Options {
 		switch o.Name {
 		case "Todo":
-			si.todoID = o.ID
+			si.TodoID = o.ID
 		case "In Progress":
-			si.inProgressID = o.ID
+			si.InProgressID = o.ID
 		case "Done":
-			si.doneID = o.ID
+			si.DoneID = o.ID
 		}
 	}
 	return si, nil
@@ -338,11 +338,11 @@ func setProjectIssueStatus(ctx context.Context, hc *http.Client, projectID, issI
 	case "Backlog":
 		return nil
 	case "Todo":
-		optionID = si.todoID
+		optionID = si.TodoID
 	case "In Progress", "In Review":
-		optionID = si.inProgressID
+		optionID = si.InProgressID
 	case "Done", "Canceled":
-		optionID = si.doneID
+		optionID = si.DoneID
 	default:
 		return nil
 	}
