@@ -172,7 +172,7 @@ func (s *state) fromLinear(ctx context.Context) error {
 	}
 
 	iss := &issueState{
-		ID: "",
+		ID:         "",
 		Identifier: "",
 	}
 	if len(s.Issues) > 0 {
@@ -182,11 +182,11 @@ func (s *state) fromLinear(ctx context.Context) error {
 		if iss.Identifier != "" {
 			log.Printf("%s: fetching next", iss.Identifier)
 		} else {
-			log.Printf("fetching first issue")
+			log.Print("fetching first issue")
 		}
 		liss, err := fetchLinearIssue(ctx, lc, iss.ID)
 		if err != nil {
-			log.Print(err)
+			log.Printf("%s: failed to fetch next (retrying in 5 minutes): %v", iss.Identifier, err)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -196,8 +196,8 @@ func (s *state) fromLinear(ctx context.Context) error {
 		}
 
 		if liss == nil {
-			log.Print("All linear issues fetched successfully.")
-			log.Print("Use subcommand to-github now to export them to GitHub.")
+			log.Print("all linear issues fetched successfully")
+			log.Print("use subcommand to-github now to export them to GitHub")
 			return nil
 		}
 		iss = &issueState{
@@ -259,7 +259,7 @@ func (s *state) toGithub(ctx context.Context) error {
 		for {
 			url, err := exportToGithub(ctx, gc, iss.Identifier, fromLinearIssue(liss))
 			if err != nil {
-				log.Print(err)
+				log.Printf("%s: failed to export (retrying in 5 minutes): %v", iss.Identifier, err)
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
