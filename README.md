@@ -66,20 +66,15 @@ export LINEAR_API_KEY=
 byelinear fetches Linear issues in reverse so that the most recent issue is created last
 and thus shows up first in GitHub issues.
 
-### Rate limits
+### Resumption
 
-byelinear will hit the Linear GraphQL complexity limit quite quickly downloading issues. In our
-case about 140 issues. byelinear will back off and retry every 5 minutes so you can just let
-it run and wait until it's done. The fetch rate ends up being about 140 issues an hour.
+If you have thousands of issues and hit a rate limit or something goes wrong, know that
+`byelinear from-linear` stores all fetched issues on the disk in
+`./linear-corpus/<issue-identifier>.json`. You can ctrl+c and resume later and `byelinear
+from-linear` will know to start from the last fetched issue based on
+`./linear-corpus/state.json`.
 
-There is also a one second wait in between every issue when fetching from Linear and
-exporting to GitHub.
-
-You can terminate byelinear and resume later. It will start right where it left off based
-on the state in `./linear-corpus/state.json` (you can change this via
-`$BYELINEAR_CORPUS`).
-
-You can also contact Linear's support and request they raise your rate limit temporarily.
+You can change the corpus directory with `$BYELINEAR_CORPUS`.
 
 ### Projects
 
@@ -100,23 +95,22 @@ Empty `$BYELINEAR_ISSUE_NUMBER` to fetch all issues.
 
 ```
 $ BYELINEAR_ISSUE_NUMBER=1396 LINEAR_API_KEY=lin_api_... go run . from-linear
-2022/09/14 10:43:33 TER-1396: fetched
-2022/09/14 10:43:34 All linear issues fetched successfully.
-2022/09/14 10:43:34 Use subcommand to-github now to export them to GitHub.
+2022/09/15 12:44:09 fetching 1396
+2022/09/15 12:44:10 fetched 1396
 ```
 
 ```
 $ BYELINEAR_ISSUE_NUMBER=1396 GITHUB_TOKEN=ghp_... BYELINEAR_ORG=terrastruct BYELINEAR_REPO=byelinear-test go run . to-github
-2022/09/14 10:44:01 TER-1396: exporting
-2022/09/14 10:44:01 TER-1396: ensuring label: dsl
-2022/09/14 10:44:01 TER-1396: ensuring label: blocked
-2022/09/14 10:44:02 TER-1396: ensuring label: easy
-2022/09/14 10:44:02 TER-1396: ensuring label: backend
-2022/09/14 10:44:02 TER-1396: creating
-2022/09/14 10:44:04 TER-1396: creating comment 0
-2022/09/14 10:44:04 TER-1396: creating comment 1
-2022/09/14 10:44:05 TER-1396: ensuring project: D2
-2022/09/14 10:44:07 TER-1396: exported: https://github.com/terrastruct/byelinear-test/issues/1
+2022/09/15 12:44:49 TER-1396: exporting
+2022/09/15 12:44:49 TER-1396: ensuring label: backend
+2022/09/15 12:44:49 TER-1396: ensuring label: easy
+2022/09/15 12:44:49 TER-1396: ensuring label: blocked
+2022/09/15 12:44:50 TER-1396: ensuring label: dsl
+2022/09/15 12:44:50 TER-1396: creating
+2022/09/15 12:44:51 TER-1396: creating comment 0
+2022/09/15 12:44:52 TER-1396: creating comment 1
+2022/09/15 12:44:52 TER-1396: ensuring project: D2
+2022/09/15 12:44:54 TER-1396: exported: https://github.com/terrastruct/byelinear-test/issues/3
 ```
 
 ### Before

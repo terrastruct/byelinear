@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
 
 func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, resp interface{}) error {
 	b, httpResp, err := doGraphQLQuery(ctx, "https://api.linear.app/graphql", hc, qreq)
-	if httpResp != nil && httpResp.Header.Get("X-Complexity") != "" {
-		log.Printf("linear query with %s complexity", httpResp.Header.Get("X-Complexity"))
+	if os.Getenv("DEBUG") != "" {
+		if httpResp != nil && httpResp.Header.Get("X-Complexity") != "" {
+			log.Printf("linear query with %s complexity", httpResp.Header.Get("X-Complexity"))
+		}
 	}
 	if err != nil {
 		return err
@@ -21,9 +24,9 @@ func doLinearQuery(ctx context.Context, hc *http.Client, qreq *graphqlQuery, res
 	return json.Unmarshal(b, &resp)
 }
 
-func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*linearIssue, error) {
+func queryLinearIssues(ctx context.Context, hc *http.Client, before string) ([]*linearIssue, error) {
 	queryString := `query($before: String, $number: Float) {
-		issues(last: 1, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
+		issues(last: 50, before: $before, filter: {number: {eq: $number}}, includeArchived: true) {
 			nodes {
 				id
 				url
@@ -79,19 +82,28 @@ func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*lin
 						url
 					}
 				}
-			}
-			pageInfo {
-				startCursor
+				relations(last: 10) {
+					nodes {
+						relatedIssue {
+							identifier
+						}
+					}
+				}
+				parent {
+					identifier
+				}
+				children(last: 10) {
+					nodes {
+						identifier
+					}
+				}
 			}
 		}
 	}`
 	var queryResp struct {
 		Data struct {
 			Issues struct {
-				Nodes    []*linearIssue `json:"nodes"`
-				PageInfo struct {
-					StartCursor string `json:"startCursor"`
-				} `json:"pageInfo"`
+				Nodes []*linearIssue `json:"nodes"`
 			} `json:"issues"`
 		} `json:"data"`
 	}
@@ -111,65 +123,7 @@ func queryLinearIssue(ctx context.Context, hc *http.Client, before string) (*lin
 	if err != nil {
 		return nil, err
 	}
-
-	if len(queryResp.Data.Issues.Nodes) == 0 {
-		return nil, nil
-	}
-
-	li := queryResp.Data.Issues.Nodes[0]
-	err = queryLinearRelations(ctx, hc, li)
-	if err != nil {
-		return nil, err
-	}
-	return li, nil
-}
-
-func queryLinearRelations(ctx context.Context, hc *http.Client, li *linearIssue) error {
-	queryString := `query($id: ID){
-		issues(filter: {id: {eq: $id}}) {
-			nodes {
-				relations(last: 10) {
-					nodes {
-						relatedIssue {
-							identifier
-						}
-					}
-				}
-				parent {
-					identifier
-				}
-				children(last: 10) {
-					nodes {
-						identifier
-					}
-				}
-			}
-		}
-	}
-	`
-	var queryResp struct {
-		Data struct {
-			Issues struct {
-				Nodes []*linearIssue `json:"nodes"`
-			} `json:"issues"`
-		} `json:"data"`
-	}
-
-	qreq := &graphqlQuery{
-		Query:     queryString,
-		Variables: map[string]interface{}{"id": li.ID},
-	}
-	err := doLinearQuery(ctx, hc, qreq, &queryResp)
-	if err != nil {
-		return err
-	}
-
-	if len(queryResp.Data.Issues.Nodes) > 0 {
-		li.Relations = queryResp.Data.Issues.Nodes[0].Relations
-		li.Parent = queryResp.Data.Issues.Nodes[0].Parent
-		li.Children = queryResp.Data.Issues.Nodes[0].Children
-	}
-	return nil
+	return queryResp.Data.Issues.Nodes, nil
 }
 
 type linearUser struct {
@@ -242,8 +196,7 @@ type linearIssue struct {
 
 func (li *linearIssue) labelsArr() []string {
 	var a []string
-	for i := len(li.Labels.Nodes) - 1; i >= 0; i-- {
-		l := li.Labels.Nodes[i]
+	for _, l := range li.Labels.Nodes {
 		a = append(a, l.Name)
 	}
 	return a
@@ -251,8 +204,7 @@ func (li *linearIssue) labelsArr() []string {
 
 func (li *linearIssue) relationsArr() []string {
 	var a []string
-	for i := len(li.Relations.Nodes) - 1; i >= 0; i-- {
-		rel := li.Relations.Nodes[i]
+	for _, rel := range li.Relations.Nodes {
 		a = append(a, rel.RelatedIssue.Identifier)
 	}
 	return a
@@ -260,8 +212,8 @@ func (li *linearIssue) relationsArr() []string {
 
 func (li *linearIssue) childrenArr() []string {
 	var a []string
-	for i := len(li.Children.Nodes) - 1; i >= 0; i-- {
-		a = append(a, li.Children.Nodes[i].Identifier)
+	for _, ch := range li.Children.Nodes {
+		a = append(a, ch.Identifier)
 	}
 	return a
 }
@@ -275,8 +227,7 @@ func (li *linearIssue) assignee() string {
 
 func (li *linearIssue) prs() []string {
 	var prs []string
-	for i := len(li.IntegrationResources.Nodes) - 1; i >= 0; i-- {
-		ir := li.IntegrationResources.Nodes[i]
+	for _, ir := range li.IntegrationResources.Nodes {
 		if ir.PullRequest != nil {
 			if ir.PullRequest.RepoLogin == orgName && ir.PullRequest.RepoName == repoName {
 				prs = append(prs, fmt.Sprintf("#%d", ir.PullRequest.Number))
@@ -290,8 +241,7 @@ func (li *linearIssue) prs() []string {
 
 func (li *linearIssue) attachmentsArr() []string {
 	var a []string
-	for i := len(li.Attachments.Nodes) - 1; i >= 0; i-- {
-		att := li.Attachments.Nodes[i]
+	for _, att := range li.Attachments.Nodes {
 		a = append(a, att.URL)
 	}
 	return a

@@ -46,7 +46,7 @@ func main() {
 	}
 }
 
-func run() (err error) {
+func run() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Hour*24)
 	defer cancel()
@@ -55,17 +55,6 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		err2 := writeState(s)
-		if err2 != nil {
-			err2 = fmt.Errorf("failed to write state: %v", err2)
-			if err != nil {
-				log.Print(err2)
-			} else {
-				err = err2
-			}
-		}
-	}()
 
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, os.Interrupt)
@@ -131,31 +120,40 @@ func writeState(s *state) error {
 	return os.WriteFile(filepath.Join(byelinearCorpus, "state.json"), b, 0644)
 }
 
-func fetchLinearIssue(ctx context.Context, lc *http.Client, previousID string) (*linearIssue, error) {
+func (s *state) fetchLinearIssues(ctx context.Context, lc *http.Client, previousID string) (*issueState, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
 	defer cancel()
 
-	li, err := queryLinearIssue(ctx, lc, previousID)
+	issuesArr, err := queryLinearIssues(ctx, lc, previousID)
 	if err != nil {
 		return nil, err
 	}
-	if li == nil {
+	if len(issuesArr) == 0 {
 		return nil, nil
 	}
 
-	b, err := json.Marshal(li)
-	if err != nil {
-		return nil, err
+	var iss *issueState
+	for _, liss := range issuesArr {
+		b, err := json.Marshal(liss)
+		if err != nil {
+			return nil, err
+		}
+
+		dest := filepath.Join(byelinearCorpus, liss.Identifier+".json")
+		err = os.WriteFile(dest, b, 0644)
+		if err != nil {
+			return nil, err
+		}
+
+		iss = &issueState{
+			ID:               liss.ID,
+			Identifier:       liss.Identifier,
+			ExportedToGithub: false,
+		}
+		s.Issues = append(s.Issues, iss)
 	}
 
-	dest := filepath.Join(byelinearCorpus, li.Identifier+".json")
-	err = os.WriteFile(dest, b, 0644)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("%s: fetched", li.Identifier)
-	return li, nil
+	return iss, nil
 }
 
 func (s *state) fromLinear(ctx context.Context) error {
@@ -175,18 +173,24 @@ func (s *state) fromLinear(ctx context.Context) error {
 		ID:         "",
 		Identifier: "",
 	}
-	if len(s.Issues) > 0 {
+	if byelinearIssueNumber == "" && len(s.Issues) > 0 {
 		iss = s.Issues[len(s.Issues)-1]
 	}
 	for {
-		if iss.Identifier != "" {
-			log.Printf("%s: fetching next", iss.Identifier)
+		if byelinearIssueNumber != "" {
+			if strings.HasSuffix(iss.Identifier, "-"+byelinearIssueNumber) {
+				log.Printf("fetched %s", byelinearIssueNumber)
+				return nil
+			}
+			log.Printf("fetching %s", byelinearIssueNumber)
+		} else if iss.Identifier != "" {
+			log.Printf("fetching 50 after %s", iss.Identifier)
 		} else {
-			log.Print("fetching first issue")
+			log.Print("fetching oldest 50")
 		}
-		liss, err := fetchLinearIssue(ctx, lc, iss.ID)
+		cursorIss, err := s.fetchLinearIssues(ctx, lc, iss.ID)
 		if err != nil {
-			log.Printf("%s: failed to fetch next (retrying in 5 minutes): %v", iss.Identifier, err)
+			log.Printf("failed to fetch 50 after %s (retrying in 5 minutes): %v", iss.Identifier, err)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -195,22 +199,16 @@ func (s *state) fromLinear(ctx context.Context) error {
 			}
 		}
 
-		if liss == nil {
+		if cursorIss == nil {
 			log.Print("all linear issues fetched successfully")
-			log.Print("use subcommand to-github now to export them to GitHub")
 			return nil
 		}
-		iss = &issueState{
-			ID:               liss.ID,
-			Identifier:       liss.Identifier,
-			ExportedToGithub: false,
-		}
-		s.Issues = append(s.Issues, iss)
 
 		err = writeState(s)
 		if err != nil {
 			return err
 		}
+		iss = cursorIss
 
 		select {
 		case <-ctx.Done():
@@ -269,12 +267,12 @@ func (s *state) toGithub(ctx context.Context) error {
 			}
 
 			iss.ExportedToGithub = true
-			log.Printf("%s: exported: %s", iss.Identifier, url)
-
 			err = writeState(s)
 			if err != nil {
 				return err
 			}
+
+			log.Printf("%s: exported: %s", iss.Identifier, url)
 			break
 		}
 

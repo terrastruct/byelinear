@@ -146,8 +146,7 @@ attachments | %s
 		state: liss.State.Name,
 	}
 
-	for i := len(liss.Comments.Nodes) - 1; i >= 0; i-- {
-		c := liss.Comments.Nodes[i]
+	for _, c := range liss.Comments.Nodes {
 		iss.comments = append(iss.comments, fmt.Sprintf(`field | value
 |-|-|
 url | %s
