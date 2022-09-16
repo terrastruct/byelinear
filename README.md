@@ -88,7 +88,12 @@ it match. Then go into `./linear-corpus/state.json` and ensure `"exported_to_jso
 
 Now you can restart.
 
-In the future to-github could be improved to allow seamless resumption by storing state
+In fact I now realize you might also end up with duplicate issues if say the request to
+add your issue to a project fails. Or to create a comment. to-github's retry loop is
+around recreating the issue again and redoing everything instead of around every
+individual API request.
+
+In the future to-github should be improved to allow seamless resumption by storing state
 about each successfully completed operation in the state.json instead of just the issue
 as a whole.
 
