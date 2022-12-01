@@ -13,19 +13,16 @@ GitHub. So we wrote this for our internal migration from Linear issues to GitHub
 byelinear uses the Linear GraphQL API and the GitHub V3 and V4 APIs.
 
 <!-- toc -->
-
-- [Install](#install)
-- [Configuration](#configuration)
-- [Caveats](#caveats)
-  * [Issues order](#issues-order)
-  * [Rate limits](#rate-limits)
-  * [Projects](#projects)
-- [Example](#example)
-  * [Before](#before)
-  * [After](#after)
-- [Related](#related)
-
-<!-- tocstop -->
+- <a href="#install" id="toc-install">Install</a>
+- <a href="#configuration" id="toc-configuration">Configuration</a>
+- <a href="#caveats" id="toc-caveats">Caveats</a>
+  - <a href="#issues-order" id="toc-issues-order">Issues order</a>
+  - <a href="#resumption" id="toc-resumption">Resumption</a>
+  - <a href="#projects" id="toc-projects">Projects</a>
+- <a href="#example" id="toc-example">Example</a>
+  - <a href="#before" id="toc-before">Before</a>
+  - <a href="#after" id="toc-after">After</a>
+- <a href="#related" id="toc-related">Related</a>
 
 ## Install
 
