@@ -1,6 +1,7 @@
 # byelinear
 
 [![ci](https://github.com/terrastruct/byelinear/actions/workflows/ci.yml/badge.svg)](https://github.com/terrastruct/byelinear/actions/workflows/ci.yml)
+[![daily](https://github.com/terrastruct/byelinear/actions/workflows/daily.yml/badge.svg)](https://github.com/terrastruct/byelinear/actions/workflows/daily.yml)
 [![license](https://img.shields.io/github/license/terrastruct/byelinear?color=9cf)](./LICENSE)
 
 `byelinear` exports Linear issues including assignees, comments, labels, linked issues/PRs and projects to GitHub issues.
