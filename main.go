@@ -171,11 +171,11 @@ func (s *state) fromLinear(ctx context.Context) error {
 	}
 
 	lc := http.DefaultClient
-	if linearAPIKey != "" {
-		lc = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: linearAPIKey},
-		))
-	}
+	// if linearAPIKey != "" {
+	// 	lc = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+	// 		&oauth2.Token{AccessToken: linearAPIKey},
+	// 	))
+	// }
 
 	iss := &issueState{
 		ID:         "",
