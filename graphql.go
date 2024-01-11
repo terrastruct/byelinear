@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 type graphqlQuery struct {
@@ -26,7 +27,7 @@ func doGraphQLQuery(ctx context.Context, url string, hc *http.Client, qreq *grap
 		return nil, nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	if linearAPIKey != "" {
+	if linearAPIKey != "" && os.Args[1] == "from-linear" {
 		httpReq.Header.Set("Authorization", linearAPIKey)
 	}
 
